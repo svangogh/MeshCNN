@@ -9,7 +9,7 @@ class MeshConv(nn.Module):
     mesh: list of mesh data-structure (len(mesh) == Batch)
     and applies convolution
     """
-    def __init__(self, in_channels, out_channels, k=5, bias=True):
+    def __init__(self, in_channels, out_channels, k=5, bias=True): # kernel width is 5 because have 4 conv neighbors (eq. 2) + edge itself
         super(MeshConv, self).__init__()
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, k), bias=bias)
         self.k = k
@@ -19,7 +19,7 @@ class MeshConv(nn.Module):
 
     def forward(self, x, mesh):
         x = x.squeeze(-1)
-        G = torch.cat([self.pad_gemm(i, x.shape[2], x.device) for i in mesh], 0)
+        G = torch.cat([self.pad_gemm(i, x.shape[2], x.device) for i in mesh], 0) # have list of meshes
         # build 'neighborhood image' and apply convolution
         G = self.create_GeMM(x, G)
         x = self.conv(G)
@@ -75,6 +75,7 @@ class MeshConv(nn.Module):
         add the edge_id itself to make #edges x 5
         then pad to desired size e.g., xsz x 5
         """
+
         padded_gemm = torch.tensor(m.gemm_edges, device=device).float()
         padded_gemm = padded_gemm.requires_grad_()
         padded_gemm = torch.cat((torch.arange(m.edges_count, device=device).float().unsqueeze(1), padded_gemm), dim=1)

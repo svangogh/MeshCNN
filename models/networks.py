@@ -3,10 +3,12 @@ import torch.nn as nn
 from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
-from models.layers.mesh_conv import MeshConv
+import sys
+sys.path.insert(0, "/home/vangogh/Desktop/git_repositories")
+from MeshCNN.models.layers.mesh_conv import MeshConv
 import torch.nn.functional as F
-from models.layers.mesh_pool import MeshPool
-from models.layers.mesh_unpool import MeshUnpool
+from MeshCNN.models.layers.mesh_pool import MeshPool
+from MeshCNN.models.layers.mesh_unpool import MeshUnpool
 
 
 ###############################################################################
@@ -131,12 +133,14 @@ class MeshConvNet(nn.Module):
         self.res = [input_res] + pool_res
         norm_args = get_norm_args(norm_layer, self.k[1:])
 
+        # for the number of layers that have been defined, run first convolution, then normalization, then pooling, and repeat
         for i, ki in enumerate(self.k[:-1]):
             setattr(self, 'conv{}'.format(i), MResConv(ki, self.k[i + 1], nresblocks))
             setattr(self, 'norm{}'.format(i), norm_layer(**norm_args[i]))
             setattr(self, 'pool{}'.format(i), MeshPool(self.res[i + 1]))
 
 
+        # at the end run global average pooling and some fully connected layers -> will have to be changed for our regression task
         self.gp = torch.nn.AvgPool1d(self.res[-1])
         # self.gp = torch.nn.MaxPool1d(self.res[-1])
         self.fc1 = nn.Linear(self.k[-1], fc_n)
@@ -145,13 +149,15 @@ class MeshConvNet(nn.Module):
     def forward(self, x, mesh):
 
         for i in range(len(self.k) - 1):
-            x = getattr(self, 'conv{}'.format(i))(x, mesh)
-            x = F.relu(getattr(self, 'norm{}'.format(i))(x))
-            x = getattr(self, 'pool{}'.format(i))(x, mesh)
+            x = getattr(self, 'conv{}'.format(i))(x, mesh) # convolution
+            x = F.relu(getattr(self, 'norm{}'.format(i))(x)) # normalization + relu
+            x = getattr(self, 'pool{}'.format(i))(x, mesh) # pooling
 
+        # global pooling
         x = self.gp(x)
         x = x.view(-1, self.k[-1])
 
+        # fc layers
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -171,7 +177,7 @@ class MResConv(nn.Module):
     def forward(self, x, mesh):
         x = self.conv0(x, mesh)
         x1 = x
-        for i in range(self.skips):
+        for i in range(self.skips): # residual connections (number of conv determined by nresblocks)
             x = getattr(self, 'bn{}'.format(i + 1))(F.relu(x))
             x = getattr(self, 'conv{}'.format(i + 1))(x, mesh)
         x += x1

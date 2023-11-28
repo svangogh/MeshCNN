@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from threading import Thread
-from models.layers.mesh_union import MeshUnion
+from MeshCNN.models.layers.mesh_union import MeshUnion
 import numpy as np
 from heapq import heappop, heapify
 
@@ -47,7 +47,8 @@ class MeshPool(nn.Module):
         mask = np.ones(mesh.edges_count, dtype=np.bool)
         edge_groups = MeshUnion(mesh.edges_count, self.__fe.device)
         while mesh.edges_count > self.__out_target:
-            value, edge_id = heappop(queue)
+            #print("true", len(queue), mesh.edges_count)
+            value, edge_id = heappop(queue) # this removes smallest element (smallest norm)
             edge_id = int(edge_id)
             if mask[edge_id]:
                 self.__pool_edge(mesh, edge_id, mask, edge_groups)
@@ -56,11 +57,13 @@ class MeshPool(nn.Module):
         self.__updated_fe[mesh_index] = fe
 
     def __pool_edge(self, mesh, edge_id, mask, edge_groups):
-        if self.has_boundaries(mesh, edge_id):
+        if self.has_boundaries(mesh, edge_id): # this will always be executed with vocal tract mesh because the mesh has boundaries 
+            #print("Edge on a boundary")
             return False
         elif self.__clean_side(mesh, edge_id, mask, edge_groups, 0)\
             and self.__clean_side(mesh, edge_id, mask, edge_groups, 2) \
             and self.__is_one_ring_valid(mesh, edge_id):
+            #print("Edge not on a boundary")
             self.__merge_edges[0] = self.__pool_side(mesh, edge_id, mask, edge_groups, 0)
             self.__merge_edges[1] = self.__pool_side(mesh, edge_id, mask, edge_groups, 2)
             mesh.merge_vertices(edge_id)
@@ -86,8 +89,9 @@ class MeshPool(nn.Module):
 
     @staticmethod
     def has_boundaries(mesh, edge_id):
+        #print("mesh.gemm_edges[edge_id]", mesh.gemm_edges[edge_id])
         for edge in mesh.gemm_edges[edge_id]:
-            if edge == -1 or -1 in mesh.gemm_edges[edge]:
+            if edge == -1 or (-1 in mesh.gemm_edges[edge]): # check if one of the neighbors is a -1 or if there is a -1 in in the respective edge neighborhood  
                 return True
         return False
 

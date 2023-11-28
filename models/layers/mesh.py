@@ -3,8 +3,10 @@ from shutil import move
 import torch
 import numpy as np
 import os
-from models.layers.mesh_union import MeshUnion
-from models.layers.mesh_prepare import fill_mesh
+import sys
+sys.path.insert(0, "/home/vangogh/Desktop/git_repositories")
+from MeshCNN.models.layers.mesh_union import MeshUnion
+from MeshCNN.models.layers.mesh_prepare import fill_mesh
 
 
 class Mesh:
@@ -13,7 +15,7 @@ class Mesh:
         self.vs = self.v_mask = self.filename = self.features = self.edge_areas = None
         self.edges = self.gemm_edges = self.sides = None
         self.pool_count = 0
-        fill_mesh(self, file, opt)
+        #fill_mesh(self, file, opt) -> not needed for us since initialize Mesh based on Birkholz model
         self.export_folder = export_folder
         self.history_data = None
         if hold_history:
