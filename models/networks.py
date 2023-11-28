@@ -152,6 +152,7 @@ class MeshConvNet(nn.Module):
             x = getattr(self, 'conv{}'.format(i))(x, mesh) # convolution
             x = F.relu(getattr(self, 'norm{}'.format(i))(x)) # normalization + relu
             x = getattr(self, 'pool{}'.format(i))(x, mesh) # pooling
+            print("Did one conv+pool layer")
 
         # global pooling
         x = self.gp(x)
