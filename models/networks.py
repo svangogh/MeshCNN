@@ -147,7 +147,7 @@ class MeshConvNet(nn.Module):
         self.fc2 = nn.Linear(fc_n, nclasses)
 
     def forward(self, x, mesh):
-
+        
         for i in range(len(self.k) - 1):
             x = getattr(self, 'conv{}'.format(i))(x, mesh) # convolution
             x = F.relu(getattr(self, 'norm{}'.format(i))(x)) # normalization + relu
@@ -180,7 +180,9 @@ class MResConv(nn.Module):
         x1 = x
         for i in range(self.skips): # residual connections (number of conv determined by nresblocks)
             x = getattr(self, 'bn{}'.format(i + 1))(F.relu(x))
+            #print("bn", i, x)
             x = getattr(self, 'conv{}'.format(i + 1))(x, mesh)
+            #print("conv", i, x)
         x += x1
         x = F.relu(x)
         return x

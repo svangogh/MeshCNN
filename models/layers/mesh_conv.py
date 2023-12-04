@@ -21,8 +21,8 @@ class MeshConv(nn.Module):
         x = x.squeeze(-1)
         G = torch.cat([self.pad_gemm(i, x.shape[2], x.device) for i in mesh], 0) # have list of meshes
         # build 'neighborhood image' and apply convolution
-        G = self.create_GeMM(x, G)
-        x = self.conv(G)
+        G = self.create_GeMM(x, G) # [1, channels, edges, 5]
+        x = self.conv(G) # [1, channels, edges, 1]
         return x
 
     def flatten_gemm_inds(self, Gi):
