@@ -53,7 +53,7 @@ class MeshPool(nn.Module):
             if mask[edge_id]:
                 self.__pool_edge(mesh, edge_id, mask, edge_groups)
         mesh.clean(mask, edge_groups)
-        fe = edge_groups.rebuild_features(self.__fe, mask, self.__out_target) # TODO: here is a bug
+        fe = edge_groups.rebuild_features(self.__fe, mask, self.__out_target) 
         self.__updated_fe = fe
 
     def __pool_edge(self, mesh, edge_id, mask, edge_groups):

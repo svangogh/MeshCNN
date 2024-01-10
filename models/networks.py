@@ -182,7 +182,7 @@ class MResConv(nn.Module):
 
     def forward(self, x, mesh):
         #print("x before conv0", x.shape)
-        x = self.conv0(x, mesh) # TODO: fix MeshConv 
+        x = self.conv0(x, mesh) 
         #print("x after conv0", x.shape)
         x1 = x
         for i in range(self.skips): # residual connections (number of conv determined by nresblocks)
