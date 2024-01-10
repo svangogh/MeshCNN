@@ -29,7 +29,7 @@ class MeshUnion:
         fe = torch.matmul(features.squeeze(-1), self.groups)
         occurrences = torch.sum(self.groups, 0).expand(fe.shape)
         fe = fe / occurrences
-        padding_b = target_edges - fe.shape[1]
+        padding_b = target_edges - fe.shape[2]
         if padding_b > 0:
             padding_b = ConstantPad2d((0, padding_b, 0, 0), 0)
             fe = padding_b(fe)

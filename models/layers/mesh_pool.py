@@ -21,26 +21,27 @@ class MeshPool(nn.Module):
         return self.forward(fe, meshes)
 
     def forward(self, fe, meshes):
-        self.__updated_fe = [[] for _ in range(len(meshes))]
+        self.__updated_fe = [[] for _ in range(meshes.vs.shape[0])] #[[] for _ in range(len(meshes))]
         pool_threads = []
         self.__fe = fe
         self.__meshes = meshes
         # iterate over batch
-        for mesh_index in range(len(meshes)):
-            if self.__multi_thread:
-                pool_threads.append(Thread(target=self.__pool_main, args=(mesh_index,)))
-                pool_threads[-1].start()
-            else:
-                self.__pool_main(mesh_index)
+        #for mesh_index in range(meshes.vs.shape[0]):
         if self.__multi_thread:
-            for mesh_index in range(len(meshes)):
-                pool_threads[mesh_index].join()
-        out_features = torch.cat(self.__updated_fe).view(len(meshes), -1, self.__out_target)
+            pool_threads.append(Thread(target=self.__pool_main()))
+            pool_threads[-1].start()
+        else:
+            self.__pool_main()
+        #if self.__multi_thread:
+        #    for mesh_index in range(meshes[0].vs.shape[0]):
+        #        pool_threads[mesh_index].join()
+        print(self.__updated_fe.shape)
+        out_features = self.__updated_fe.view(meshes.vs.shape[0], fe.shape[1], self.__out_target)
         return out_features
 
-    def __pool_main(self, mesh_index):
-        mesh = self.__meshes[mesh_index]
-        queue = self.__build_queue(self.__fe[mesh_index, :, :mesh.edges_count], mesh.edges_count)
+    def __pool_main(self):
+        mesh = self.__meshes
+        queue = self.__build_queue(self.__fe[:, :, :mesh.edges_count], mesh.edges_count)
         # recycle = []
         # last_queue_len = len(queue)
         last_count = mesh.edges_count + 1
@@ -53,8 +54,10 @@ class MeshPool(nn.Module):
             if mask[edge_id]:
                 self.__pool_edge(mesh, edge_id, mask, edge_groups)
         mesh.clean(mask, edge_groups)
-        fe = edge_groups.rebuild_features(self.__fe[mesh_index], mask, self.__out_target)
-        self.__updated_fe[mesh_index] = fe
+        print(self.__fe.shape, "__fe")
+        fe = edge_groups.rebuild_features(self.__fe, mask, self.__out_target) # TODO: here is a bug
+        print(fe.shape, "fe")
+        self.__updated_fe = fe
 
     def __pool_edge(self, mesh, edge_id, mask, edge_groups):
         if self.has_boundaries(mesh, edge_id): # this will always be executed with vocal tract mesh because the mesh has boundaries 
@@ -187,7 +190,8 @@ class MeshPool(nn.Module):
 
     def __build_queue(self, features, edges_count):
         # delete edges with smallest norm
-        squared_magnitude = torch.sum(features * features, 0)
+        # since now have multiple times/batches -> decide to aggregate and take sum of norms across different time/batch points
+        squared_magnitude = torch.sum(features * features, 1).sum(0) # aggregate over both channels (as in original) and batch/time
         if squared_magnitude.shape[-1] != 1:
             squared_magnitude = squared_magnitude.unsqueeze(-1)
         edge_ids = torch.arange(edges_count, device=squared_magnitude.device, dtype=torch.float32).unsqueeze(-1)
