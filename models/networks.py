@@ -153,8 +153,8 @@ class MeshConvNet(nn.Module):
             print("After conv layer", x.shape)
             x = F.relu(getattr(self, 'norm{}'.format(i))(x)) # normalization + relu
             x = getattr(self, 'pool{}'.format(i))(x, mesh) # pooling # should be [time x batch, features, edges] with edges getting smaller and smaller due to pooling
-            print("Did one conv+pool layer")
-            print(x.shape)
+            print("After pool layer", x.shape)
+            #print("Did one conv+pool layer")
 
         # global pooling
         x = self.gp(x)
