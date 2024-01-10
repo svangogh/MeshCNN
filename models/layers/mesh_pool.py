@@ -35,7 +35,6 @@ class MeshPool(nn.Module):
         #if self.__multi_thread:
         #    for mesh_index in range(meshes[0].vs.shape[0]):
         #        pool_threads[mesh_index].join()
-        print(self.__updated_fe.shape)
         out_features = self.__updated_fe.view(meshes.vs.shape[0], fe.shape[1], self.__out_target)
         return out_features
 
@@ -54,9 +53,7 @@ class MeshPool(nn.Module):
             if mask[edge_id]:
                 self.__pool_edge(mesh, edge_id, mask, edge_groups)
         mesh.clean(mask, edge_groups)
-        print(self.__fe.shape, "__fe")
         fe = edge_groups.rebuild_features(self.__fe, mask, self.__out_target) # TODO: here is a bug
-        print(fe.shape, "fe")
         self.__updated_fe = fe
 
     def __pool_edge(self, mesh, edge_id, mask, edge_groups):
