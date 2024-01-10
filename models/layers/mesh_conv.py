@@ -18,11 +18,14 @@ class MeshConv(nn.Module):
         return self.forward(edge_f, mesh)
 
     def forward(self, x, mesh):
-        x = x.squeeze(-1)
+        x = x.squeeze(-1) # removes last dimension if of size 1
+        # [1, edges, 5]
         G = torch.cat([self.pad_gemm(i, x.shape[2], x.device) for i in mesh], 0) # have list of meshes
+        #print("G before", G.shape)
         # build 'neighborhood image' and apply convolution
-        G = self.create_GeMM(x, G) # [1, channels, edges, 5]
-        x = self.conv(G) # [1, channels, edges, 1]
+        G = self.create_GeMM(x, G) # [batch x time, channels, edges, 5]
+        #print("G after", G.shape)
+        x = self.conv(G) # [batch x time, channels, edges, 1]
         return x
 
     def flatten_gemm_inds(self, Gi):
@@ -42,7 +45,7 @@ class MeshConv(nn.Module):
         returns a 'fake image' which can use 2d convolution on
         output dimensions: Batch x Channels x Edges x 5
         """
-        Gishape = Gi.shape
+        Gishape = Gi.shape # [1, edges, 5]
         # pad the first row of  every sample in batch with zeros
         padding = torch.zeros((x.shape[0], x.shape[1], 1), requires_grad=True, device=x.device)
         # padding = padding.to(x.device)
@@ -53,13 +56,20 @@ class MeshConv(nn.Module):
         Gi_flat = self.flatten_gemm_inds(Gi)
         Gi_flat = Gi_flat.view(-1).long()
         #
-        odim = x.shape
-        x = x.permute(0, 2, 1).contiguous()
-        x = x.view(odim[0] * odim[2], odim[1])
+        odim = x.shape # [batch x time, 5, edges]
+        #print("x before permute", x.shape)
+        x = x.permute(0, 2, 1).contiguous() # [batch x time, edges, 5]
+        #print("x after permute", x.shape)
+        #x = x.view(odim[0] * odim[2], odim[1]) # [batch x time x edges, 5]
+        #print("x after view", x.shape)
 
-        f = torch.index_select(x, dim=0, index=Gi_flat)
-        f = f.view(Gishape[0], Gishape[1], Gishape[2], -1)
-        f = f.permute(0, 3, 1, 2)
+        # [batch x time, edges x channels, 5]
+        f = torch.index_select(x, dim=1, index=Gi_flat) # was dim=0
+        #print("f", f.shape)
+        #print("Gishape", Gishape)
+        # [batch x time, edges, 5, channels]
+        f = f.view(x.shape[0], Gishape[1], Gishape[2], -1) # it was f.view(Gishape[0], Gishape[1], Gishape[2], -1)
+        f = f.permute(0, 3, 1, 2) # [batch x time, channels, edges, 5]
 
         # apply the symmetric functions for an equivariant conv
         x_1 = f[:, :, :, 1] + f[:, :, :, 3]

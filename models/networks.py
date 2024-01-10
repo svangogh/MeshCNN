@@ -150,8 +150,9 @@ class MeshConvNet(nn.Module):
         
         for i in range(len(self.k) - 1):
             x = getattr(self, 'conv{}'.format(i))(x, mesh) # convolution
+            print("After conv layer", x.shape)
             x = F.relu(getattr(self, 'norm{}'.format(i))(x)) # normalization + relu
-            x = getattr(self, 'pool{}'.format(i))(x, mesh) # pooling # should be [5, features, edges] with edges getting smaller and smaller due to pooling
+            x = getattr(self, 'pool{}'.format(i))(x, mesh) # pooling # should be [time x batch, features, edges] with edges getting smaller and smaller due to pooling
             print("Did one conv+pool layer")
             print(x.shape)
 
@@ -180,7 +181,9 @@ class MResConv(nn.Module):
                     MeshConv(self.out_channels, self.out_channels, bias=False))
 
     def forward(self, x, mesh):
-        x = self.conv0(x, mesh)
+        #print("x before conv0", x.shape)
+        x = self.conv0(x, mesh) # TODO: fix MeshConv 
+        #print("x after conv0", x.shape)
         x1 = x
         for i in range(self.skips): # residual connections (number of conv determined by nresblocks)
             x = getattr(self, 'bn{}'.format(i + 1))(F.relu(x))
