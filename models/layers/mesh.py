@@ -28,8 +28,8 @@ class Mesh:
     def merge_vertices(self, edge_id):
         self.remove_edge(edge_id)
         edge = self.edges[edge_id]
-        v_a = self.vs[edge[0]]
-        v_b = self.vs[edge[1]]
+        v_a = self.vs[:,edge[0]]
+        v_b = self.vs[:,edge[1]]
         # update pA
         v_a.__iadd__(v_b)
         v_a.__itruediv__(2)
