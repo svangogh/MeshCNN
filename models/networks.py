@@ -150,22 +150,22 @@ class MeshConvNet(nn.Module):
         
         for i in range(len(self.k) - 1):
             x = getattr(self, 'conv{}'.format(i))(x, mesh) # convolution
-            print("After conv layer", x.shape)
+            #print("After conv layer", x.shape)
             x = F.relu(getattr(self, 'norm{}'.format(i))(x)) # normalization + relu
             x = getattr(self, 'pool{}'.format(i))(x, mesh[0]) # pooling # should be [time x batch, features, edges] with edges getting smaller and smaller due to pooling
-            print("After pool layer", x.shape)
+            #print("After pool layer", x.shape)
             #print("Did one conv+pool layer")
 
         # global pooling
         x = self.gp(x)
-        print("After global pooling", x.shape)
+        #print("After global pooling", x.shape)
         x = x.view(-1, self.k[-1])
 
         # fc layers
         x = F.relu(self.fc1(x))
-        print("After fc", x.shape)
+        #print("After fc", x.shape)
         x = self.fc2(x)
-        print("After fc", x.shape)
+        #print("After fc", x.shape)
         return x
 
 class MResConv(nn.Module):
