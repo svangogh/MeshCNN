@@ -140,11 +140,11 @@ class MeshConvNet(nn.Module):
             setattr(self, 'pool{}'.format(i), MeshPool(self.res[i + 1]))
 
 
-        # at the end run global average pooling and some fully connected layers -> will have to be changed for our regression task
-        self.gp = torch.nn.AvgPool1d(self.res[-1])
-        # self.gp = torch.nn.MaxPool1d(self.res[-1])
-        self.fc1 = nn.Linear(self.k[-1], fc_n)
-        self.fc2 = nn.Linear(fc_n, nclasses)
+        ## at the end run global average pooling and some fully connected layers -> will have to be changed for our regression task
+        #self.gp = torch.nn.AvgPool1d(self.res[-1])
+        ## self.gp = torch.nn.MaxPool1d(self.res[-1])
+        #self.fc1 = nn.Linear(self.k[-1], fc_n)
+        #self.fc2 = nn.Linear(fc_n, nclasses)
 
     def forward(self, x, mesh):
         
@@ -156,16 +156,17 @@ class MeshConvNet(nn.Module):
             #print("After pool layer", x.shape)
             #print("Did one conv+pool layer")
 
-        # global pooling
-        x = self.gp(x)
+        ## global pooling
+        #print("Output of MeshCNN", x.shape)
+        #x = self.gp(x)
         #print("After global pooling", x.shape)
-        x = x.view(-1, self.k[-1])
-
-        # fc layers
-        x = F.relu(self.fc1(x))
-        #print("After fc", x.shape)
-        x = self.fc2(x)
-        #print("After fc", x.shape)
+        #x = x.view(-1, self.k[-1])
+#
+        ## fc layers
+        #x = F.relu(self.fc1(x))
+        ##print("After fc", x.shape)
+        #x = self.fc2(x)
+        ##print("After fc", x.shape)
         return x
 
 class MResConv(nn.Module):
