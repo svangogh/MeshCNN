@@ -4,7 +4,7 @@ from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 import sys
-sys.path.insert(0, "/home/vangogh/Desktop/git_repositories")
+sys.path.insert(0, "../")
 from MeshCNN.models.layers.mesh_conv import MeshConv
 import torch.nn.functional as F
 from MeshCNN.models.layers.mesh_pool import MeshPool

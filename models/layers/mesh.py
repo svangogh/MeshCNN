@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import os
 import sys
-sys.path.insert(0, "/home/vangogh/Desktop/git_repositories")
+sys.path.insert(0, "../")
 from MeshCNN.models.layers.mesh_union import MeshUnion
 from MeshCNN.models.layers.mesh_prepare import fill_mesh
 
