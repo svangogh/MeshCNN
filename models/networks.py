@@ -124,10 +124,9 @@ def define_loss(opt):
 ##############################################################################
 
 class MeshConvNet(nn.Module):
-    """Network for learning a global shape descriptor (classification)
+    """Network used in hybrid model
     """
-    def __init__(self, norm_layer, nf0, conv_res, nclasses, input_res, pool_res, fc_n,
-                 nresblocks=3):
+    def __init__(self, norm_layer, nf0, conv_res, input_res, pool_res, nresblocks=3):
         super(MeshConvNet, self).__init__()
         self.k = [nf0] + conv_res
         self.res = [input_res] + pool_res
@@ -140,12 +139,6 @@ class MeshConvNet(nn.Module):
             setattr(self, 'pool{}'.format(i), MeshPool(self.res[i + 1]))
 
 
-        ## at the end run global average pooling and some fully connected layers -> will have to be changed for our regression task
-        #self.gp = torch.nn.AvgPool1d(self.res[-1])
-        ## self.gp = torch.nn.MaxPool1d(self.res[-1])
-        #self.fc1 = nn.Linear(self.k[-1], fc_n)
-        #self.fc2 = nn.Linear(fc_n, nclasses)
-
     def forward(self, x, mesh):
         
         for i in range(len(self.k) - 1):
@@ -156,17 +149,6 @@ class MeshConvNet(nn.Module):
             #print("After pool layer", x.shape)
             #print("Did one conv+pool layer")
 
-        ## global pooling
-        #print("Output of MeshCNN", x.shape)
-        #x = self.gp(x)
-        #print("After global pooling", x.shape)
-        #x = x.view(-1, self.k[-1])
-#
-        ## fc layers
-        #x = F.relu(self.fc1(x))
-        ##print("After fc", x.shape)
-        #x = self.fc2(x)
-        ##print("After fc", x.shape)
         return x
 
 class MResConv(nn.Module):
