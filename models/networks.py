@@ -140,12 +140,12 @@ class MeshConvNet(nn.Module):
             setattr(self, 'pool{}'.format(i), MeshPool(self.res[i + 1]))
 
 
-    def forward(self, x, mesh):
+    def forward(self, x, mesh, birkholz_parameters):
         
         #print("Zero entries before", torch.sum(x[0,0]==0).detach().cpu().numpy(), torch.sum(x[100,0]==0).detach().cpu().numpy())
         
         for i in range(len(self.k) - 1):
-            x = getattr(self, 'conv{}'.format(i))(x, mesh) # convolution
+            x = getattr(self, 'conv{}'.format(i))(x, mesh, birkholz_parameters) # convolution
             #print("After conv layer", x.shape)
             #x = F.relu(getattr(self, 'norm{}'.format(i))(x)) # normalization + relu
             x = getattr(self, 'pool{}'.format(i))(x, mesh[0]) # pooling # should be [time x batch, features, edges] with edges getting smaller and smaller due to pooling
@@ -169,14 +169,14 @@ class ConvBlock(nn.Module):
             setattr(self, 'conv{}'.format(i + 1),
                     MeshConv(self.out_channels, self.out_channels, bias=True))
 
-    def forward(self, x, mesh):
+    def forward(self, x, mesh, birkholz_parameters):
         #print("x before conv0", x.shape) # x before conv [batch x time, 5 features, edges]
-        x = self.conv0(x, mesh) 
+        x = self.conv0(x, mesh, birkholz_parameters) 
         #print("x after conv0", x.shape)
         for i in range(self.nblocks):
             x = getattr(self, 'bn{}'.format(i + 1))(F.relu(x))
             #print("after bn", i, x.shape)
-            x = getattr(self, 'conv{}'.format(i + 1))(x, mesh)
+            x = getattr(self, 'conv{}'.format(i + 1))(x, mesh, birkholz_parameters)
             #print("after conv", i, x.shape)
         x = F.relu(x)
         return x

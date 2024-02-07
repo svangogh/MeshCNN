@@ -11,22 +11,31 @@ class MeshConv(nn.Module):
     """
     def __init__(self, in_channels, out_channels, k=5, bias=True): # kernel width is 5 because have 4 conv neighbors (eq. 2) + edge itself
         super(MeshConv, self).__init__()
-        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, k), bias=bias)
+        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, k), bias=bias) # in torch takes [batch, channel, height, width]
+        self.time_conv = nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(3, 1), bias=bias, padding="same")
         self.k = k
 
-    def __call__(self, edge_f, mesh):
-        return self.forward(edge_f, mesh)
+    def __call__(self, edge_f, mesh, birkholz_parameters):
+        return self.forward(edge_f, mesh, birkholz_parameters)
 
-    def forward(self, x, mesh):
+    def forward(self, x, mesh, birkholz_parameters):
         x = x.squeeze(-1) # removes last dimension if of size 1
         #print("x after squeeze", x.shape)
         # [1, edges, 5 features]
         G = torch.cat([self.pad_gemm(i, x.shape[2], x.device) for i in mesh], 0) # have list of meshes
         #print("G before", G.shape)
         # build 'neighborhood image' and apply convolution
-        G = self.create_GeMM(x, G) # [batch x time, channels, edges, 5]
+        G = self.create_GeMM(x, G) # [batch x time, channels, edges, 5] 
         #print("G after", G.shape)
         x = self.conv(G) # [batch x time, channels, edges, 1]
+        #print("x after spatial", x.shape)
+        # apply temporal convolution
+        x = x.reshape(birkholz_parameters.shape[0], birkholz_parameters.shape[1], x.shape[1], x.shape[2]) # [batch, time, channels, edges]
+        x = x.permute(0,2,1,3) # [batch, channels, time, edges]
+        x = self.time_conv(x) 
+        #print("x after temporal", x.shape) # [batch, channels, time, edges]
+        x = x.permute(0,2,1,3) # [batch, time, channels, edges]
+        x = x.flatten(0,1).unsqueeze(-1) # [batch x time, channels, edges, 1]
         return x
 
     def flatten_gemm_inds(self, Gi):
