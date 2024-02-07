@@ -29,13 +29,13 @@ class MeshConv(nn.Module):
         #print("G after", G.shape)
         x = self.conv(G) # [batch x time, channels, edges, 1]
         #print("x after spatial", x.shape)
-        # apply temporal convolution
-        x = x.reshape(birkholz_parameters.shape[0], birkholz_parameters.shape[1], x.shape[1], x.shape[2]) # [batch, time, channels, edges]
-        x = x.permute(0,2,1,3) # [batch, channels, time, edges]
-        x = self.time_conv(x) 
-        #print("x after temporal", x.shape) # [batch, channels, time, edges]
-        x = x.permute(0,2,1,3) # [batch, time, channels, edges]
-        x = x.flatten(0,1).unsqueeze(-1) # [batch x time, channels, edges, 1]
+        ## apply temporal convolution
+        #x = x.reshape(birkholz_parameters.shape[0], birkholz_parameters.shape[1], x.shape[1], x.shape[2]) # [batch, time, channels, edges]
+        #x = x.permute(0,2,1,3) # [batch, channels, time, edges]
+        #x = self.time_conv(x) 
+        ##print("x after temporal", x.shape) # [batch, channels, time, edges]
+        #x = x.permute(0,2,1,3) # [batch, time, channels, edges]
+        #x = x.flatten(0,1).unsqueeze(-1) # [batch x time, channels, edges, 1]
         return x
 
     def flatten_gemm_inds(self, Gi):
