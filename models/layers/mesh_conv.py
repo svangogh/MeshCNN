@@ -19,7 +19,8 @@ class MeshConv(nn.Module):
 
     def forward(self, x, mesh):
         x = x.squeeze(-1) # removes last dimension if of size 1
-        # [1, edges, 5]
+        #print("x after squeeze", x.shape)
+        # [1, edges, 5 features]
         G = torch.cat([self.pad_gemm(i, x.shape[2], x.device) for i in mesh], 0) # have list of meshes
         #print("G before", G.shape)
         # build 'neighborhood image' and apply convolution

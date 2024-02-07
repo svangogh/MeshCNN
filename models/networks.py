@@ -120,7 +120,7 @@ def define_loss(opt):
     return loss
 
 ##############################################################################
-# Classes For Classification / Segmentation Networks
+# Classes For Classification / Segmentation Networks -> and now for regression as well 
 ##############################################################################
 
 class MeshConvNet(nn.Module):
@@ -130,16 +130,19 @@ class MeshConvNet(nn.Module):
         super(MeshConvNet, self).__init__()
         self.k = [nf0] + conv_res
         self.res = [input_res] + pool_res
-        norm_args = get_norm_args(norm_layer, self.k[1:])
+        #norm_args = get_norm_args(norm_layer, self.k[1:])
 
         # for the number of layers that have been defined, run first convolution, then normalization, then pooling, and repeat
         for i, ki in enumerate(self.k[:-1]):
-            setattr(self, 'conv{}'.format(i), MResConv(ki, self.k[i + 1], nresblocks))
-            setattr(self, 'norm{}'.format(i), norm_layer(**norm_args[i]))
+            #setattr(self, 'conv{}'.format(i), MResConv(ki, self.k[i + 1]), nresblocks)
+            setattr(self, 'conv{}'.format(i), ConvBlock(ki, self.k[i + 1]))
+            #setattr(self, 'norm{}'.format(i), norm_layer(**norm_args[i]))
             setattr(self, 'pool{}'.format(i), MeshPool(self.res[i + 1]))
 
 
     def forward(self, x, mesh):
+        
+        #print("Zero entries before", torch.sum(x[0,0]==0).detach().cpu().numpy(), torch.sum(x[100,0]==0).detach().cpu().numpy())
         
         for i in range(len(self.k) - 1):
             x = getattr(self, 'conv{}'.format(i))(x, mesh) # convolution
@@ -148,9 +151,37 @@ class MeshConvNet(nn.Module):
             x = getattr(self, 'pool{}'.format(i))(x, mesh[0]) # pooling # should be [time x batch, features, edges] with edges getting smaller and smaller due to pooling
             #print("After pool layer", x.shape)
             #print("Did one conv+pool layer")
+            #print("Zero entries at", i, torch.sum(x[0,0]==0).detach().cpu().numpy(), torch.sum(x[100,0]==0).detach().cpu().numpy())
+
 
         return x
 
+
+class ConvBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, nblocks=3):
+        super(ConvBlock, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.conv0 = MeshConv(self.in_channels, self.out_channels, bias=True)
+        self.nblocks = nblocks
+        for i in range(self.nblocks):
+            setattr(self, 'bn{}'.format(i + 1), nn.BatchNorm2d(self.out_channels))
+            setattr(self, 'conv{}'.format(i + 1),
+                    MeshConv(self.out_channels, self.out_channels, bias=True))
+
+    def forward(self, x, mesh):
+        #print("x before conv0", x.shape) # x before conv [batch x time, 5 features, edges]
+        x = self.conv0(x, mesh) 
+        #print("x after conv0", x.shape)
+        for i in range(self.nblocks):
+            x = getattr(self, 'bn{}'.format(i + 1))(F.relu(x))
+            #print("after bn", i, x.shape)
+            x = getattr(self, 'conv{}'.format(i + 1))(x, mesh)
+            #print("after conv", i, x.shape)
+        x = F.relu(x)
+        return x
+    
+    
 class MResConv(nn.Module):
     def __init__(self, in_channels, out_channels, skips=1):
         super(MResConv, self).__init__()
@@ -164,15 +195,15 @@ class MResConv(nn.Module):
                     MeshConv(self.out_channels, self.out_channels, bias=False))
 
     def forward(self, x, mesh):
-        #print("x before conv0", x.shape)
+        #print("x before conv0", x.shape) # x before conv [batch x time, 5 features, edges]
         x = self.conv0(x, mesh) 
         #print("x after conv0", x.shape)
         x1 = x
         for i in range(self.skips): # residual connections (number of conv determined by nresblocks)
             x = getattr(self, 'bn{}'.format(i + 1))(F.relu(x))
-            #print("bn", i, x)
+            #print("after bn", i, x.shape)
             x = getattr(self, 'conv{}'.format(i + 1))(x, mesh)
-            #print("conv", i, x)
+            #print("after conv", i, x.shape)
         x += x1
         x = F.relu(x)
         return x
